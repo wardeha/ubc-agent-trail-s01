@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CourseBuddy</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #F3F5EF; color: #14302B; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+  h1 { margin: 0 0 4px; }
+  .hint { margin: 0 0 16px; color: #5A6862; }
+  #chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; white-space: pre-wrap; line-height: 1.4; }
+  .you { align-self: flex-end; background: #14302B; color: #F3F5EF; }
+  .bot { align-self: flex-start; background: #FFFFFF; border: 1px solid #C3CCC4; }
+  .tool { align-self: flex-start; font-family: monospace; font-size: 13px; color: #3F7D5C; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  input { flex: 1; padding: 12px; font-size: 16px; border: 1px solid #C3CCC4; border-radius: 8px; }
+  button { padding: 12px 18px; font-size: 16px; border: 0; border-radius: 8px; background: #3F7D5C; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CourseBuddy</h1>
+  <p class="hint">Try: "What do I need before CPSC 221?"</p>
+  <div id="chat"></div>
+  <form id="form">
+    <input id="input" placeholder="Ask CourseBuddy..." autocomplete="off" autofocus>
+    <button>Send</button>
+  </form>
+</main>
+<script>
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("input");
+
+  function show(text, kind) {
+    const div = document.createElement("div");
+    div.className = "msg " + kind;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  document.getElementById("form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    show(message, "you");
+    const waiting = show("thinking...", "tool");
+
+    // Send the message to our server, which passes it to the agent
+    const response = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    const data = await response.json();
+
+    waiting.remove();
+    data.tools.forEach((t) => show("[tool] " + t, "tool"));
+    show(data.reply, "bot");
+  });
+</script>
+</body>
+</html>
